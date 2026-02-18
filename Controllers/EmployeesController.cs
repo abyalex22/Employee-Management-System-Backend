@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using EmployeeManagement.API.Models;
+﻿using EmployeeManagement.API.Models;
 using EmployeeManagement.API.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace EmployeeManagement.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/employees")]
     public class EmployeesController : ControllerBase
@@ -15,7 +18,7 @@ namespace EmployeeManagement.API.Controllers
         {
             _employeeService = employeeService;
         }
-
+        [AllowAnonymous]
         [HttpPost("register")]
         public IActionResult Register(RegisterEmployeeRequest request)
         {
@@ -29,6 +32,7 @@ namespace EmployeeManagement.API.Controllers
                 return Conflict("Username already exists");
             }
         }
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult GetAllEmployees(
     int pageNumber = 1,
@@ -44,10 +48,27 @@ namespace EmployeeManagement.API.Controllers
             });
         }
 
+        //[Authorize]
+        //[HttpGet("{employeeId:int}")]
+        //public IActionResult GetEmployeeById(int employeeId)
+        //{
+        //    var employee = _employeeService.GetEmployeeById(employeeId);
 
+        //    if (employee == null)
+        //        return NotFound("Employee not found or inactive");
+
+        //    return Ok(employee);
+        //}
+        [Authorize]
         [HttpGet("{employeeId:int}")]
         public IActionResult GetEmployeeById(int employeeId)
         {
+            var loggedId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)!.Value;
+
+            if (role != "Admin" && loggedId != employeeId)
+                return Forbid();
+
             var employee = _employeeService.GetEmployeeById(employeeId);
 
             if (employee == null)
@@ -55,6 +76,21 @@ namespace EmployeeManagement.API.Controllers
 
             return Ok(employee);
         }
+
+        [Authorize]
+        [HttpPut("self")]
+        public IActionResult UpdateSelf(UpdateEmployeeRequest request)
+        {
+            var id = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+            _employeeService.UpdateEmployeeByAdmin(id, request);
+
+            return Ok("Profile updated");
+        }
+
+
+
+        [Authorize(Roles = "Admin")]
         [HttpPut("{employeeId:int}")]
         public IActionResult UpdateEmployeeByAdmin(int employeeId,UpdateEmployeeRequest request)
         {
@@ -70,6 +106,7 @@ namespace EmployeeManagement.API.Controllers
         }
 
         //Photo Update
+        [Authorize]
         [HttpPut("{id}/photo")]
         public IActionResult UpdatePhoto(int id, [FromBody] PhotoUploadRequest request)
         {

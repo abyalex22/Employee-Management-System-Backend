@@ -1,0 +1,8 @@
+﻿namespace EmployeeManagement.API.ModelsV2
+{
+    public class TestModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Age { get; set; }
+    }
+}
