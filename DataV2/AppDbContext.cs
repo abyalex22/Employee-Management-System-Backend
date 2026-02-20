@@ -11,5 +11,7 @@ namespace EmployeeManagement.API.DataV2
         }
 
         public DbSet<EmployeeEntity> Employees { get; set; }
+        
+
     }
 }

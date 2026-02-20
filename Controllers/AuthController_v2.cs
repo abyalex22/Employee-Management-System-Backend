@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using EmployeeManagement.API.ServicesV2;
 using EmployeeManagement.API.Models;
+using EmployeeManagement.API.ModelsV2.DTOs;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -24,27 +25,27 @@ namespace EmployeeManagement.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var result = await _auth.ValidateLogin(request.Username);
+            var user = await _auth.GetUserByUsername(request.Username);
 
-            if (result == null)
+            if (user == null)
                 return Unauthorized("Invalid credentials");
 
-            bool valid = BCrypt.Net.BCrypt.Verify(request.Password, result.Value.hash);
+            bool valid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
             if (!valid)
                 return Unauthorized("Invalid credentials");
 
-            if (result.Value.status == "Inactive")
+            if (user.Status == "Inactive")
                 return Unauthorized("User inactive");
 
-            var token = GenerateToken(result.Value.id, result.Value.role);
+            var token = GenerateToken(user.EmployeeId, user.Role);
 
-            return Ok(new
+            return Ok(new LoginResponse_v2
             {
-                employeeId = result.Value.id,
-                role = result.Value.role,
-                status = result.Value.status,
-                token
+                EmployeeId = user.EmployeeId,
+                Role = user.Role,
+                Status = user.Status,
+                Token = token
             });
         }
 
@@ -52,8 +53,8 @@ namespace EmployeeManagement.API.Controllers
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier,id.ToString()),
-                new Claim(ClaimTypes.Role,role)
+                new Claim(ClaimTypes.NameIdentifier, id.ToString()),
+                new Claim(ClaimTypes.Role, role)
             };
 
             var key = new SymmetricSecurityKey(
@@ -66,7 +67,9 @@ namespace EmployeeManagement.API.Controllers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
+                expires: DateTime.UtcNow.AddMinutes(
+                    Convert.ToDouble(_config["Jwt:DurationInMinutes"])
+                ),
                 signingCredentials: creds
             );
 

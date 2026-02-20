@@ -1,4 +1,5 @@
 ﻿using EmployeeManagement.API.DataV2;
+using EmployeeManagement.API.ModelsV2;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeManagement.API.ServicesV2
@@ -12,16 +13,10 @@ namespace EmployeeManagement.API.ServicesV2
             _context = context;
         }
 
-        public async Task<(int id, string role, string status, string hash)?>
-            ValidateLogin(string username)
+        public async Task<EmployeeEntity?> GetUserByUsername(string username)
         {
-            var user = await _context.Employees
+            return await _context.Employees
                 .FirstOrDefaultAsync(x => x.Username == username);
-
-            if (user == null)
-                return null;
-
-            return (user.EmployeeId, user.Role, user.Status, user.PasswordHash);
         }
     }
 }

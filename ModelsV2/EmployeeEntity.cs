@@ -11,11 +11,16 @@ namespace EmployeeManagement.API.ModelsV2
 
         [Required]
         public string Name { get; set; } = null!;
-
         public string? Designation { get; set; }
+
+        [Column("Address")]
         public string? Address { get; set; }
         public string? Department { get; set; }
+
+        [Column("JoiningDate")]
         public DateTime JoiningDate { get; set; }
+
+        [Column("SkillSet")]
         public string? SkillSet { get; set; }
 
         [Required]
